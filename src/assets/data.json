@@ -1,0 +1,44 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Beetroot",
+      "description": "Local shop",
+      "weight": "500 gm",
+      "price": "17.29",
+      "image": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RUxLwJSrkDnppmOT6Cn7hcUF4L29vx.png"
+    },
+    {
+      "id": 2,
+      "name": "Italian Avocado",
+      "description": "Local shop",
+      "weight": "500 gm",
+      "price": "12.29",
+      "image": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RUxLwJSrkDnppmOT6Cn7hcUF4L29vx.png"
+    },
+    {
+      "id": 3,
+      "name": "Szam amm",
+      "description": "Process food",
+      "weight": "500 gm",
+      "price": "14.29",
+      "image": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RUxLwJSrkDnppmOT6Cn7hcUF4L29vx.png"
+    },
+    {
+      "id": 4,
+      "name": "Beef Mixed",
+      "description": "Cut Bone",
+      "weight": "500 gm",
+      "price": "16.29",
+      "image": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RUxLwJSrkDnppmOT6Cn7hcUF4L29vx.png"
+    },
+    {
+      "id": 5,
+      "name": "Cold drinks",
+      "description": "Sprite",
+      "weight": "500 gm",
+      "price": "18.29",
+      "image": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RUxLwJSrkDnppmOT6Cn7hcUF4L29vx.png"
+    }
+  ]
+}

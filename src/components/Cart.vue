@@ -26,7 +26,7 @@
     </div>
 
     <!-- Cart Items -->
-    <div v-else class="overflow-y-auto max-h-[calc(60vh-250px)]">
+    <div v-else class="overflow-y-auto max-h-[calc(60vh-250px)] md:max-h-[calc(80vh-250px)]">
       <CartItem 
         v-for="item in cartItems" 
         :key="item.id" 

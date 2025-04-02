@@ -1,7 +1,7 @@
 <template>
     <div id="bottom-sheet" class="fixed z-30 bottom-0 left-0 right-0" @click.self="toggleSheet" v-if="modelValue">
         <Transition name="slide-in-out" appear>
-            <div class="absolute w-full max-w-[500px] bottom-0 right-0 bg-white shadow-lg rounded-t-xl p-4 h-[60vh]">
+            <div class="absolute w-full max-w-[500px] bottom-0 right-0 bg-white shadow-lg rounded-t-xl p-4 h-[60vh] md:h-[80vh]">
                 <div class="w-full font-semibold text-xl text-center">{{ title }}</div>
                 <slot></slot>
             </div>

@@ -28,7 +28,7 @@ const isLoading = ref(true); // Track loading state
 
 const fetchProducts = async () => {
   try {
-    const response = await fetch('https://dummyjson.com/products?limit=10');
+    const response = await fetch('https://dummyjson.com/products/category/groceries?limit=20');
     const data = await response.json();
 
     // Transform API data to match your product structure

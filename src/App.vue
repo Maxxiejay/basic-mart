@@ -1,6 +1,8 @@
 <template>
   <Navbar @toggle-cart="handleToggleCart" />
   <div id="main-content" class="mt-6 bg-gray-200">
+
+      <!-- <AdvancedRichTextEditor /> -->
     <router-view />
   </div>
   <BottomSheet v-model="showSheet" title="Cart">
@@ -21,6 +23,7 @@ import BottomSheet from '@/components/BottomSheet.vue';
 import Cart from '@/components/Cart.vue';
 import { ref } from 'vue';
 import { useCart } from '@/composables/useCart';
+import AdvancedRichTextEditor from '@/components/AdvancedRichTextEditor.vue';
 
 const showSheet = ref(false);
 

@@ -8,6 +8,11 @@
     font-family: Nunito, sans-serif;
 }
 
+input:not([type="checkbox"]):not([type="radio"]),
+textarea, select, button {
+    padding: 5px 10px;
+}
+
 .some-class {
     background-color: #86efac /* #115e59 */;
 }

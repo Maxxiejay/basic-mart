@@ -25,10 +25,7 @@
   import AdminLayout from '@/components/admin/AdminLayout.vue';
   import ProductsManagement from '@/components/admin/ProductsManagement.vue';
   import ProductForm from '@/components/admin/ProductForm.vue';
-  import AccountSettings from '@/components/admin/AccountSettings.vue';
-  import useTitle from '@vueuse/core'
-  
-  const title = useTitle() 
+  import AccountSettings from '@/components/admin/AccountSettings.vue'
 
   // State
   const layout = ref(null);

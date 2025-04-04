@@ -8,7 +8,7 @@
     font-family: Nunito, sans-serif;
 }
 
-input:not([type="checkbox"]):not([type="radio"]),
+input:not([type="checkbox"]):not([type="radio"]):not("[type='search']"),
 textarea, select, button {
     padding: 5px 10px;
 }

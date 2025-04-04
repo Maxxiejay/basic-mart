@@ -23,7 +23,7 @@
               <Search class="h-5 w-5 text-gray-400" />
             </div>
             <input
-              type="text"
+              type="search"
               name="search"
               id="search"
               v-model="searchQuery"

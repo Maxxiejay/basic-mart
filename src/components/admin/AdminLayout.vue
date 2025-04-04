@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col md:flex-row min-h-screen bg-gray-50 rounded-xl overflow-hidden mx-[10px]">
+  <div class="container mx-auto flex flex-col md:flex-row min-h-screen bg-gray-50 rounded-xl overflow-hidden mx-[10px]">
     <!-- Mobile Overlay -->
     <div 
       v-if="isSidebarOpen" 

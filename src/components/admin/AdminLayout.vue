@@ -17,7 +17,9 @@
         <!-- Logo -->
         <div class="flex items-center h-16 px-6 border-b border-gray-200">
           <ShoppingBag class="h-6 w-6 text-gray-700" />
-          <span class="ml-2 text-lg font-medium text-gray-900">Admin Panel</span>
+          <span class="ml-2 text-lg font-medium text-gray-900">
+            {{ isAdmin ? 'Admin Panel' : 'Dashboard' }}
+          </span>
           <!-- Close button for mobile -->
           <button 
             @click="isSidebarOpen = false" 
@@ -50,7 +52,9 @@
           <div class="flex items-center">
             <img class="h-8 w-8 rounded-full" src="https://via.placeholder.com/150" alt="User avatar" />
             <div class="ml-3">
-              <p class="text-sm font-medium text-gray-700">Admin User</p>
+              <p class="text-sm font-medium text-gray-700">
+                {{ user?.firstName || user?.name || 'User' }}
+              </p>
               <button @click="navigateTo('account')" class="text-xs text-gray-500 hover:text-gray-700">
                 Manage Account
               </button>
@@ -81,25 +85,46 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useAuth } from '@/composables/useAuth';
 import { 
   ShoppingBag, 
   Package, 
   PlusCircle, 
   User, 
+  Users,
   Menu, 
-  X 
+  X,
+  ShoppingCart,
+  BarChart3
 } from 'lucide-vue-next';
 
-// Navigation items
-const navigation = [
-  { id: 'products', name: 'Products', icon: Package },
-  { id: 'add-product', name: 'Add Product', icon: PlusCircle },
-  { id: 'account', name: 'Account', icon: User },
-];
+const { user, isAdmin } = useAuth();
 
-// Current section
-const currentSection = ref('products');
+// Navigation items - different for admin vs regular users
+const navigation = computed(() => {
+  const baseNavigation = [
+    { id: 'my-orders', name: 'My Orders', icon: ShoppingCart },
+    { id: 'account', name: 'My Account', icon: User },
+  ];
+  
+  // Add admin-only sections
+  if (isAdmin.value) {
+    return [
+      { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
+      { id: 'products', name: 'Products', icon: Package },
+      { id: 'orders', name: 'All Orders', icon: ShoppingBag },
+      { id: 'users', name: 'User Management', icon: Users },
+      { id: 'add-product', name: 'Add Product', icon: PlusCircle },
+      ...baseNavigation
+    ];
+  }
+  
+  return baseNavigation;
+});
+
+// Current section - default to dashboard for admins, my-orders for regular users
+const currentSection = ref(isAdmin.value ? 'dashboard' : 'my-orders');
 
 // Mobile sidebar state
 const isSidebarOpen = ref(false);

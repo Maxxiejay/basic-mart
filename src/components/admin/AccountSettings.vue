@@ -95,6 +95,117 @@
           </div>
 
           <div class="pt-6 border-t border-gray-200 mt-6">
+            <h3 class="text-lg font-medium text-gray-900">Delivery Information</h3>
+            <p class="mt-1 text-sm text-gray-500">Update your delivery address and contact information for orders.</p>
+            
+            <div class="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              <!-- Street Address -->
+              <div class="sm:col-span-6">
+                <label for="address" class="block text-sm font-medium text-gray-700">Street Address</label>
+                <div class="mt-1">
+                  <input
+                    type="text"
+                    id="address"
+                    v-model="deliveryInfo.address"
+                    placeholder="123 Main Street"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <!-- City -->
+              <div class="sm:col-span-6 md:col-span-2">
+                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                <div class="mt-1">
+                  <input
+                    type="text"
+                    id="city"
+                    v-model="deliveryInfo.city"
+                    placeholder="New York"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <!-- State -->
+              <div class="sm:col-span-6 md:col-span-2">
+                <label for="state" class="block text-sm font-medium text-gray-700">State / Province</label>
+                <div class="mt-1">
+                  <input
+                    type="text"
+                    id="state"
+                    v-model="deliveryInfo.state"
+                    placeholder="NY"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <!-- Postal Code -->
+              <div class="sm:col-span-6 md:col-span-2">
+                <label for="postal-code" class="block text-sm font-medium text-gray-700">Postal Code</label>
+                <div class="mt-1">
+                  <input
+                    type="text"
+                    id="postal-code"
+                    v-model="deliveryInfo.postalCode"
+                    placeholder="10001"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <!-- Country -->
+              <div class="sm:col-span-6 md:col-span-3">
+                <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+                <div class="mt-1">
+                  <select
+                    id="country"
+                    v-model="deliveryInfo.country"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  >
+                    <option value="">Select Country</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Delivery Phone -->
+              <div class="sm:col-span-6 md:col-span-3">
+                <label for="delivery-phone" class="block text-sm font-medium text-gray-700">Delivery Phone</label>
+                <div class="mt-1">
+                  <input
+                    type="tel"
+                    id="delivery-phone"
+                    v-model="deliveryInfo.phone"
+                    placeholder="(555) 123-4567"
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+
+              <!-- Delivery Instructions -->
+              <div class="sm:col-span-6">
+                <label for="instructions" class="block text-sm font-medium text-gray-700">Delivery Instructions</label>
+                <div class="mt-1">
+                  <textarea
+                    id="instructions"
+                    v-model="deliveryInfo.instructions"
+                    rows="3"
+                    placeholder="Leave at front door, ring doorbell, etc."
+                    class="shadow-sm focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-gray-200 mt-6">
             <h3 class="text-lg font-medium text-gray-900">Password</h3>
             <p class="mt-1 text-sm text-gray-500">Update your password.</p>
             
@@ -140,9 +251,11 @@
           <div class="mt-6 flex justify-end">
             <button
               type="submit"
-              class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              :disabled="isLoading"
+              class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Changes
+              <span v-if="isLoading">Saving...</span>
+              <span v-else>Save Changes</span>
             </button>
           </div>
         </form>
@@ -152,17 +265,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { User } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
+import { getProfile, updateProfile } from '@/api';
+
+const { user } = useAuth();
 
 // Profile data
 const profile = ref({
-  firstName: 'Admin',
-  lastName: 'User',
-  email: 'admin@example.com',
-  phone: '(555) 123-4567',
-  role: 'Administrator',
-  avatar: 'https://via.placeholder.com/150'
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  role: '',
+  avatar: null
+});
+
+// Delivery information
+const deliveryInfo = ref({
+  address: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: '',
+  phone: '',
+  instructions: ''
 });
 
 // Password form
@@ -172,27 +300,115 @@ const passwordForm = ref({
   confirm: ''
 });
 
-// Methods
-const saveProfile = () => {
-  // In a real app, this would send data to an API
-  console.log('Saving profile:', profile.value);
-  
-  // If password fields are filled, update password
-  if (passwordForm.value.current && passwordForm.value.new && passwordForm.value.confirm) {
-    if (passwordForm.value.new === passwordForm.value.confirm) {
-      console.log('Updating password');
-      // Reset password fields
-      passwordForm.value = {
-        current: '',
-        new: '',
-        confirm: ''
+// Loading states
+const isLoading = ref(false);
+
+// Load profile and delivery info on mount
+onMounted(async () => {
+  await loadProfile();
+});
+
+const loadProfile = async () => {
+  try {
+    if (user.value) {
+      // Use data from auth composable if available
+      profile.value = {
+        firstName: user.value.firstName || '',
+        lastName: user.value.lastName || '',
+        email: user.value.email || '',
+        phone: user.value.phone || '',
+        role: user.value.role || '',
+        avatar: user.value.avatar || null
+      };
+      
+      // Also load delivery info from user data
+      deliveryInfo.value = {
+        address: user.value.address || '',
+        city: user.value.city || '',
+        state: user.value.state || '',
+        postalCode: user.value.postalCode || '',
+        country: user.value.country || '',
+        phone: user.value.deliveryPhone || user.value.phone || '',
+        instructions: user.value.instructions || ''
       };
     } else {
-      alert('New password and confirmation do not match');
+      // Fallback to API call
+      const response = await getProfile();
+      profile.value = {
+        firstName: response.data.firstName || '',
+        lastName: response.data.lastName || '',
+        email: response.data.email || '',
+        phone: response.data.phone || '',
+        role: response.data.role || '',
+        avatar: response.data.avatar || null
+      };
+      
+      // Load delivery info from profile response
+      deliveryInfo.value = {
+        address: response.data.address || '',
+        city: response.data.city || '',
+        state: response.data.state || '',
+        postalCode: response.data.postalCode || '',
+        country: response.data.country || '',
+        phone: response.data.deliveryPhone || response.data.phone || '',
+        instructions: response.data.instructions || ''
+      };
     }
+  } catch (error) {
+    console.error('Failed to load profile:', error);
   }
-  
-  // Show success message
-  alert('Profile updated successfully!');
+};
+
+// Methods
+const saveProfile = async () => {
+  try {
+    isLoading.value = true;
+    
+    // Combine profile and delivery information in one update
+    const updateData = {
+      firstName: profile.value.firstName,
+      lastName: profile.value.lastName,
+      email: profile.value.email,
+      phone: profile.value.phone,
+      // Delivery information
+      address: deliveryInfo.value.address,
+      city: deliveryInfo.value.city,
+      state: deliveryInfo.value.state,
+      postalCode: deliveryInfo.value.postalCode,
+      country: deliveryInfo.value.country,
+      deliveryPhone: deliveryInfo.value.phone,
+      instructions: deliveryInfo.value.instructions
+    };
+
+    await updateProfile(updateData);
+    
+    // If password fields are filled, update password
+    if (passwordForm.value.current && passwordForm.value.new && passwordForm.value.confirm) {
+      if (passwordForm.value.new === passwordForm.value.confirm) {
+        await updateProfile({
+          currentPassword: passwordForm.value.current,
+          newPassword: passwordForm.value.new
+        });
+        
+        // Reset password fields
+        passwordForm.value = {
+          current: '',
+          new: '',
+          confirm: ''
+        };
+      } else {
+        alert('New password and confirmation do not match');
+        return;
+      }
+    }
+    
+    // Show success message
+    alert('Profile and delivery information updated successfully!');
+  } catch (error) {
+    console.error('Failed to save profile:', error);
+    alert('Failed to update profile. Please try again.');
+  } finally {
+    isLoading.value = false;
+  }
 };
 </script>

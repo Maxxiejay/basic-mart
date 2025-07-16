@@ -75,16 +75,45 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import DashboardLayout from '../../components/admin/DashboardLayout.vue';
+import { getAdminDashboard } from '@/api';
 
 // Stats data
 const stats = ref([
-  { name: 'Total Products', value: '48', icon: 'ShoppingBagIcon' },
-  { name: 'Total Orders', value: '124', icon: 'ShoppingCartIcon' },
-  { name: 'Total Customers', value: '86', icon: 'UsersIcon' },
-  { name: 'Revenue', value: '$12,426', icon: 'CurrencyDollarIcon' },
+  { name: 'Total Products', value: '0', icon: 'ShoppingBagIcon' },
+  { name: 'Total Orders', value: '0', icon: 'ShoppingCartIcon' },
+  { name: 'Total Customers', value: '0', icon: 'UsersIcon' },
+  { name: 'Revenue', value: '$0', icon: 'CurrencyDollarIcon' },
 ]);
+
+const isLoading = ref(true);
+const error = ref(null);
+
+// Fetch dashboard data
+const fetchDashboardData = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+    const response = await getAdminDashboard();
+    const data = response.data;
+    
+    stats.value = [
+      { name: 'Total Products', value: data.totalProducts?.toString() || '0', icon: 'ShoppingBagIcon' },
+      { name: 'Total Orders', value: data.totalOrders?.toString() || '0', icon: 'ShoppingCartIcon' },
+      { name: 'Total Customers', value: data.totalUsers?.toString() || '0', icon: 'UsersIcon' },
+      { name: 'Revenue', value: `₦${data.totalSales?.toLocaleString() || '0'}`, icon: 'CurrencyDollarIcon' },
+    ];
+  } catch (err) {
+    console.error('Failed to fetch dashboard data:', err);
+    error.value = 'Failed to load dashboard data';
+    // Keep default values on error
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(fetchDashboardData);
 
 // Recent activity data
 const recentActivity = ref([

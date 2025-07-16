@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-lg shadow-sm p-2 flex flex-col items-center" @click.self="viewProduct(product.id)">
     <!-- Product Image -->
-    <img :src="product.thumbnail" :alt="product.title" class="w-24 h-24 object-contain mb-2">
+    <img :src="getImageUrl(product.thumbnail || product.image)" :alt="product.title || product.name" class="w-full h-24 object-contain mb-2">
     
     <!-- Product Name and Description -->
     <div class="text-center mb-1">
@@ -34,6 +34,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useCart } from '@/composables/useCart';
+import { getImageUrl } from '@/api';
 import router from '@/router';
 
 const props = defineProps({

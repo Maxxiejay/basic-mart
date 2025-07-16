@@ -10,6 +10,18 @@
     </div>
 
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <!-- Error Message -->
+      <div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 m-4">
+        <div class="flex">
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Error</h3>
+            <div class="mt-2 text-sm text-red-700">
+              {{ error }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <form @submit.prevent="saveProduct" class="p-4 sm:p-6">
         <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <!-- Product Image -->
@@ -19,29 +31,27 @@
             </label>
             <div class="mt-1 flex flex-col sm:flex-row items-start sm:items-center">
               <div class="h-32 w-32 overflow-hidden rounded-md bg-gray-100">
-                <img v-if="form.imageUrl" :src="form.imageUrl" alt="Product preview"
+                <img v-if="imagePreview" :src="imagePreview" alt="Product preview"
                   class="h-full w-full object-cover" />
                 <div v-else class="flex h-full w-full items-center justify-center">
                   <Image class="h-12 w-12 text-gray-300" />
                 </div>
               </div>
               <div class="mt-4 sm:mt-0 sm:ml-5 flex-1">
-                <div class="relative rounded-md shadow-sm">
-                  <input type="text" v-model="form.imageUrl"
-                    class="focus:ring-gray-500 focus:border-gray-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Enter image URL" />
-                </div>
-                <p class="mt-2 text-sm text-gray-500">
-                  Enter a URL for the product image or use the upload button.
-                </p>
                 <div class="mt-1">
                   <label for="file-upload"
-                    class="relative cursor-pointer bg-white rounded-md font-medium text-gray-600 hover:text-gray-500 focus-within:outline-none">
-                    <span>Upload a file</span>
+                    class="relative cursor-pointer bg-white rounded-md font-medium text-gray-600 hover:text-gray-500 focus-within:outline-none border border-gray-300 px-4 py-2 inline-block">
+                    <span>{{ selectedFile ? 'Change Image' : 'Select Image' }}</span>
                     <input id="file-upload" name="file-upload" type="file" class="sr-only" @change="handleImageUpload"
                       accept="image/*" />
                   </label>
                 </div>
+                <p class="mt-2 text-sm text-gray-500">
+                  {{ selectedFile ? `Selected: ${selectedFile.name}` : 'Select an image file for the product' }}
+                </p>
+                <p v-if="selectedFile" class="mt-1 text-xs text-gray-400">
+                  Size: {{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB
+                </p>
               </div>
             </div>
           </div>
@@ -129,10 +139,20 @@
             class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
             Cancel
           </button>
-          <button type="submit"
-            class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-            {{ isEditing ? 'Update Product' : 'Create Product' }}
+          <button type="submit" :disabled="isLoading || (!isEditing && !selectedFile)"
+            class="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span v-if="isLoading">
+              {{ isEditing ? 'Updating...' : 'Creating...' }}
+            </span>
+            <span v-else>
+              {{ isEditing ? 'Update Product' : 'Create Product' }}
+            </span>
           </button>
+        </div>
+        
+        <!-- Validation message for required image -->
+        <div v-if="!isEditing && !selectedFile" class="mt-2 text-right">
+          <p class="text-sm text-gray-500">Image is required for new products</p>
         </div>
       </form>
     </div>
@@ -140,8 +160,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { ArrowLeft, Image } from 'lucide-vue-next';
+import { createProduct, updateProduct } from '@/api';
 
 const props = defineProps({
   productToEdit: {
@@ -160,14 +181,26 @@ const form = ref({
   price: '',
   stock: '',
   status: 'Active',
-  description: '',
-  imageUrl: ''
+  description: ''
 });
+
+// File handling
+const selectedFile = ref(null);
+const imagePreview = ref(null);
+
+// Loading and error states
+const isLoading = ref(false);
+const error = ref(null);
 
 // Check if we're editing an existing product
 const isEditing = computed(() => !!form.value.id);
 
 const resetForm = () => {
+  // Clean up preview URL if it's a blob URL
+  if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imagePreview.value);
+  }
+  
   form.value = {
     id: null,
     name: '',
@@ -175,15 +208,27 @@ const resetForm = () => {
     price: '',
     stock: '',
     status: 'Active',
-    description: '',
-    imageUrl: ''
+    description: ''
   };
+  selectedFile.value = null;
+  imagePreview.value = null;
 };
 
 // Watch for changes to productToEdit
 watch(() => props.productToEdit, (newProduct) => {
   if (newProduct) {
-    form.value = { ...newProduct };
+    form.value = {
+      id: newProduct.id,
+      name: newProduct.name,
+      category: newProduct.category,
+      price: newProduct.price.toString(),
+      stock: newProduct.stock.toString(),
+      status: newProduct.status,
+      description: newProduct.description || ''
+    };
+    // Set image preview if editing existing product
+    imagePreview.value = newProduct.image || null;
+    selectedFile.value = null; // Reset file selection when editing
   } else {
     resetForm();
   }
@@ -193,20 +238,68 @@ watch(() => props.productToEdit, (newProduct) => {
 const handleImageUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    // In a real app, you would upload this file to a server
-    // For demo purposes, we'll create a local URL
-    form.value.imageUrl = URL.createObjectURL(file);
+    // Clean up previous preview URL
+    if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview.value);
+    }
+    
+    selectedFile.value = file;
+    // Create preview URL
+    imagePreview.value = URL.createObjectURL(file);
   }
 };
 
-const saveProduct = () => {
-  emit('save-product', { ...form.value });
-  emit('change-section', 'products');
+const saveProduct = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
 
-  if (!isEditing.value) {
-    resetForm();
+    // Create FormData to handle file upload
+    const formData = new FormData();
+    
+    // Add all form fields to FormData
+    formData.append('name', form.value.name);
+    formData.append('description', form.value.description);
+    formData.append('price', parseFloat(form.value.price));
+    formData.append('category', form.value.category);
+    formData.append('stock', parseInt(form.value.stock));
+    formData.append('status', form.value.status);
+    
+    // Add image file if selected
+    if (selectedFile.value) {
+      formData.append('image', selectedFile.value);
+    }
+
+    let result;
+    if (isEditing.value) {
+      // Update existing product
+      result = await updateProduct(form.value.id, formData);
+    } else {
+      // Create new product
+      result = await createProduct(formData);
+    }
+
+    // Emit success and navigate back to products list
+    emit('save-product', result.data);
+    emit('change-section', 'products');
+
+    if (!isEditing.value) {
+      resetForm();
+    }
+  } catch (err) {
+    console.error('Failed to save product:', err);
+    error.value = err.response?.data?.message || 'Failed to save product';
+  } finally {
+    isLoading.value = false;
   }
 };
+
+// Cleanup blob URLs on component unmount
+onUnmounted(() => {
+  if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imagePreview.value);
+  }
+});
 
 
 </script>

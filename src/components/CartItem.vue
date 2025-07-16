@@ -3,8 +3,8 @@
       <!-- Product Image -->
       <div class="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-md overflow-hidden mr-3">
         <img 
-          :src="item.thumbnail" 
-          :alt="item.title" 
+          :src="getImageUrl(item.thumbnail || item.image)" 
+          :alt="item.title || item.name" 
           class="w-full h-full object-cover"
           @error="onImageError"
         />
@@ -12,7 +12,7 @@
       
       <!-- Product Details -->
       <div class="flex-grow min-w-0">
-        <h3 class="text-sm font-medium text-gray-900 truncate">{{ item.title }}</h3>
+        <h3 class="text-sm font-medium text-gray-900 truncate">{{ item.title || item.name }}</h3>
         <p v-if="item.variant" class="text-xs text-gray-500">{{ item.variant }}</p>
         <div class="mt-1 flex items-center">
           <!-- Quantity Controls -->
@@ -39,7 +39,7 @@
       
       <!-- Price and Remove -->
       <div class="flex flex-col items-end ml-2">
-        <span class="text-sm font-medium text-gray-900">${{ (item.price * item.quantity).toFixed(2) }}</span>
+        <span class="text-sm font-medium text-gray-900">₦{{ (item.price * item.quantity).toFixed(2) }}</span>
         <button 
           @click="removeItem" 
           class="mt-1 text-xs text-red-500 hover:text-red-700 focus:outline-none"
@@ -52,13 +52,14 @@
   
   <script setup>
   import { ref } from 'vue';
+  import { getImageUrl } from '@/api';
   
   const props = defineProps({
     item: {
       type: Object,
       required: true,
       validator: (item) => {
-        return item.id && item.name && item.price !== undefined && item.quantity !== undefined;
+        return item.id && (item.name || item.title) && item.price !== undefined && item.quantity !== undefined;
       }
     }
   });

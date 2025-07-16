@@ -1,10 +1,23 @@
 <template>
   <div class="container mx-auto p-4">
     <!-- Product Details Section -->
-    <div v-if="product" class="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-6">
+    <div v-if="isLoading" class="text-center py-10">
+      <p class="text-gray-500">Loading product details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="text-center py-10">
+      <p class="text-red-600">{{ error }}</p>
+      <button @click="fetchProductDetails(route.params.id)" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+        Try Again
+      </button>
+    </div>
+
+    <!-- Product Details -->
+    <div v-else-if="product" class="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row gap-6">
       <!-- Product Image -->
       <div class="flex-shrink-0">
-        <img :src="product.thumbnail" :alt="product.title" class="w-64 h-64 object-contain mx-auto" />
+        <img :src="getImageUrl(product.thumbnail || product.image)" :alt="product.title || product.name" class="w-64 h-64 object-contain mx-auto" />
       </div>
 
       <!-- Product Info -->
@@ -12,7 +25,7 @@
         <h1 class="text-2xl font-bold mb-2">{{ product.title }}</h1>
         <p class="text-gray-600 text-sm mb-4">{{ product.description }}</p>
         <p class="text-gray-500 text-sm mb-4">Weight: {{ product.weight || 'N/A' }}</p>
-        <p class="text-lg font-bold mb-4">${{ product.price }}</p>
+        <p class="text-lg font-bold mb-4">₦{{ product.price }}</p>
 
         <!-- Add to Cart Button or Quantity Selector -->
         <div v-if="cartQuantity > 0" class="w-full md:max-w-[200px] bg-green-100 rounded-md flex items-center justify-between p-2 font-bold text-primaryDark text-xl">
@@ -30,9 +43,9 @@
       </div>
     </div>
 
-    <!-- Loading State -->
+    <!-- No Product Found -->
     <div v-else class="text-center py-10">
-      <p class="text-gray-500">Loading product details...</p>
+      <p class="text-gray-500">Product not found</p>
     </div>
 
     <!-- Related Products Section -->
@@ -51,33 +64,51 @@
 
 <script setup>
 import { computed, ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router'; // To access route params
+import { useRoute } from 'vue-router';
 import { useCart } from '@/composables/useCart';
 import ProductCard from '@/components/ProductCard.vue';
+import { getProduct, getProducts, getImageUrl } from '@/api';
 
-const route = useRoute(); // Access the current route
-const product = ref(null); // Product data
-const relatedProducts = ref([]); // Related products data
+const route = useRoute();
+const product = ref(null);
+const relatedProducts = ref([]);
+const isLoading = ref(true);
+const error = ref(null);
 
 // Fetch product details by ID
 const fetchProductDetails = async (productId) => {
   try {
-    const response = await fetch(`https://dummyjson.com/products/${productId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch product details');
-    }
-    const data = await response.json();
-    console.log(data)
-    product.value = data;
+    isLoading.value = true;
+    error.value = null;
 
-    // Fetch related products (for simplicity, using the same API)
-    const relatedResponse = await fetch(`https://dummyjson.com/products/category/${data.category}`);
-    if (relatedResponse.ok) {
-      const relatedData = await relatedResponse.json();
-      relatedProducts.value = relatedData.products.filter(p => p.id !== productId).slice(0, 4); // Exclude current product
-    }
-  } catch (error) {
-    console.error('Failed to fetch product details:', error);
+    // Fetch from backend API
+    const response = await getProduct(productId);
+    product.value = {
+      id: response.data.id,
+      title: response.data.name,
+      description: response.data.description,
+      price: response.data.price.toFixed(2),
+      thumbnail: response.data.image,
+      category: response.data.category
+    };
+
+    // Fetch related products from same category
+    const relatedResponse = await getProducts({ category: response.data.category, limit: 5 });
+    relatedProducts.value = relatedResponse.data
+      .filter(p => p.id !== productId)
+      .slice(0, 4)
+      .map(p => ({
+        id: p.id,
+        title: p.name,
+        description: p.description,
+        price: p.price.toFixed(2),
+        thumbnail: p.image
+      }));
+  } catch (err) {
+    console.error('Failed to fetch product details:', err);
+    error.value = 'Failed to load product details. Please check your connection and try again.';
+  } finally {
+    isLoading.value = false;
   }
 };
 

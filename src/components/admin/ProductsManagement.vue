@@ -27,6 +27,7 @@
               name="search"
               id="search"
               v-model="searchQuery"
+              @input="handleSearch"
               class="focus:ring-gray-500 focus:border-gray-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
               placeholder="Search products"
             />
@@ -48,8 +49,23 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="isLoading" class="bg-white shadow rounded-lg p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p class="mt-4 text-gray-500">Loading products...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="bg-white shadow rounded-lg p-8 text-center">
+      <AlertTriangle class="mx-auto h-12 w-12 text-red-400" />
+      <p class="mt-4 text-red-600">{{ error }}</p>
+      <button @click="fetchProducts" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+        Try Again
+      </button>
+    </div>
+
     <!-- Products Table for larger screens -->
-    <div class="hidden sm:block bg-white shadow overflow-hidden sm:rounded-md">
+    <div v-else class="hidden sm:block bg-white shadow overflow-hidden sm:rounded-md">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -79,7 +95,7 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10">
-                    <img class="h-10 w-10 rounded-md object-cover" :src="product.image" alt="" />
+                    <img class="h-10 w-10 rounded-md object-cover" :src="getImageUrl(product.image)" alt="" />
                   </div>
                   <div class="ml-4">
                     <div class="text-sm font-medium text-gray-900">
@@ -92,7 +108,7 @@
                 <div class="text-sm text-gray-900">{{ product.category }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${{ product.price.toFixed(2) }}</div>
+                <div class="text-sm text-gray-900">₦{{ product.price.toFixed(2) }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">{{ product.stock }}</div>
@@ -118,7 +134,7 @@
     </div>
     
     <!-- Mobile product cards -->
-    <div class="sm:hidden space-y-4">
+    <div v-if="!isLoading && !error" class="sm:hidden space-y-4">
       <div 
         v-for="product in filteredProducts" 
         :key="product.id" 
@@ -127,7 +143,7 @@
         <div class="p-4">
           <div class="flex items-center">
             <div class="flex-shrink-0 h-12 w-12">
-              <img class="h-12 w-12 rounded-md object-cover" :src="product.image" alt="" />
+              <img class="h-12 w-12 rounded-md object-cover" :src="getImageUrl(product.image)" alt="" />
             </div>
             <div class="ml-4 flex-1">
               <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
@@ -141,7 +157,7 @@
           
           <div class="mt-4 flex justify-between items-center">
             <div>
-              <div class="text-sm font-medium text-gray-900">${{ product.price.toFixed(2) }}</div>
+              <div class="text-sm font-medium text-gray-900">₦{{ product.price.toFixed(2) }}</div>
               <div class="text-xs text-gray-500">Stock: {{ product.stock }}</div>
             </div>
             <div class="flex space-x-2">
@@ -152,7 +168,7 @@
                 <Edit class="h-4 w-4" />
               </button>
               <button 
-                @click="confirmDelete(product)" 
+                @click="handleDeleteProduct(product.id)" 
                 class="inline-flex items-center p-1.5 border border-red-300 rounded-md text-xs text-red-700"
               >
                 <Trash class="h-4 w-4" />
@@ -164,7 +180,7 @@
     </div>
       
     <!-- Empty State -->
-    <div v-if="filteredProducts.length === 0" class="py-12 text-center bg-white shadow rounded-lg">
+    <div v-if="!isLoading && !error && filteredProducts.length === 0" class="py-12 text-center bg-white shadow rounded-lg">
       <Package class="mx-auto h-12 w-12 text-gray-400" />
       <h3 class="mt-2 text-sm font-medium text-gray-800">No products</h3>
       <p class="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
@@ -203,7 +219,7 @@
             </div>
           </div>
           <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button @click="deleteProduct" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+            <button @click="handleDeleteFromModal" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
               Delete
             </button>
             <button @click="showDeleteModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
@@ -217,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { 
   PlusCircle, 
   Search, 
@@ -226,61 +242,59 @@ import {
   Edit,
   Trash
 } from 'lucide-vue-next';
+import { getProducts, deleteProduct, getImageUrl, searchProducts } from '@/api';
 
 const emit = defineEmits(['change-section', 'edit-product']);
 
-// Sample products data
-const products = ref([
-  {
-    id: 1,
-    name: 'Wireless Headphones',
-    category: 'Electronics',
-    price: 149.99,
-    stock: 45,
-    status: 'Active',
-    image: 'https://via.placeholder.com/150?text=Headphones'
-  },
-  {
-    id: 2,
-    name: 'Smart Watch',
-    category: 'Electronics',
-    price: 199.99,
-    stock: 32,
-    status: 'Active',
-    image: 'https://via.placeholder.com/150?text=Watch'
-  },
-  {
-    id: 3,
-    name: 'Bluetooth Speaker',
-    category: 'Electronics',
-    price: 79.99,
-    stock: 18,
-    status: 'Active',
-    image: 'https://via.placeholder.com/150?text=Speaker'
-  },
-  {
-    id: 4,
-    name: 'Cotton T-Shirt',
-    category: 'Clothing',
-    price: 24.99,
-    stock: 120,
-    status: 'Active',
-    image: 'https://via.placeholder.com/150?text=Tshirt'
-  },
-  {
-    id: 5,
-    name: 'Leather Wallet',
-    category: 'Accessories',
-    price: 39.99,
-    stock: 64,
-    status: 'Active',
-    image: 'https://via.placeholder.com/150?text=Wallet'
+const products = ref([]);
+const isLoading = ref(true);
+const error = ref(null);
+
+// Fetch products from backend
+const fetchProducts = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+    const response = await getProducts();
+    products.value = response.data.map(product => ({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      stock: product.stock,
+      status: product.stock > 0 ? 'Active' : 'Out of Stock',
+      image: product.image
+    }));
+  } catch (err) {
+    console.error('Failed to fetch products:', err);
+    error.value = 'Failed to load products';
+  } finally {
+    isLoading.value = false;
   }
-]);
+};
+
+// Delete product
+const handleDeleteProduct = async (productId) => {
+  if (!confirm('Are you sure you want to delete this product?')) {
+    return;
+  }
+  
+  try {
+    await deleteProduct(productId);
+    await fetchProducts(); // Refresh the list
+  } catch (err) {
+    console.error('Failed to delete product:', err);
+    alert('Failed to delete product. Please try again.');
+  }
+};
+
+onMounted(fetchProducts);
 
 // Filters and search
 const searchQuery = ref('');
 const categoryFilter = ref('');
+const isSearching = ref(false);
+const searchTimeout = ref(null);
 
 // Delete modal
 const showDeleteModal = ref(false);
@@ -290,16 +304,7 @@ const productToDelete = ref(null);
 const filteredProducts = computed(() => {
   let result = [...products.value];
   
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(product => 
-      product.name.toLowerCase().includes(query) || 
-      product.category.toLowerCase().includes(query)
-    );
-  }
-  
-  // Apply category filter
+  // Apply category filter (client-side for better UX)
   if (categoryFilter.value) {
     result = result.filter(product => 
       product.category.toLowerCase() === categoryFilter.value.toLowerCase()
@@ -308,6 +313,40 @@ const filteredProducts = computed(() => {
   
   return result;
 });
+
+// Handle search with debouncing
+const handleSearch = () => {
+  // Clear existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+  
+  // Set new timeout for debounced search
+  searchTimeout.value = setTimeout(async () => {
+    const query = searchQuery.value.trim();
+    
+    if (query) {
+      await performSearch(query);
+    } else {
+      await fetchProducts();
+    }
+  }, 300); // 300ms debounce
+};
+
+// Perform backend search
+const performSearch = async (query) => {
+  try {
+    isLoading.value = true;
+    isSearching.value = true;
+    const response = await searchProducts(query);
+    products.value = response.data || [];
+  } catch (err) {
+    console.error('Search failed:', err);
+    error.value = 'Search failed. Please try again.';
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 // Methods
 const editProduct = (product) => {
@@ -320,11 +359,22 @@ const confirmDelete = (product) => {
   showDeleteModal.value = true;
 };
 
-const deleteProduct = () => {
+const handleDeleteFromModal = async () => {
   if (productToDelete.value) {
-    products.value = products.value.filter(p => p.id !== productToDelete.value.id);
-    showDeleteModal.value = false;
-    productToDelete.value = null;
+    try {
+      await deleteProduct(productToDelete.value.id);
+      await fetchProducts(); // Refresh the list from backend
+      showDeleteModal.value = false;
+      productToDelete.value = null;
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+      alert('Failed to delete product. Please try again.');
+    }
   }
 };
+
+// Expose fetchProducts method for parent component
+defineExpose({
+  fetchProducts
+});
 </script>

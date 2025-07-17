@@ -12,7 +12,7 @@
     <!-- Price -->
     <div class="flex items-baseline mb-4">
       <span class="text-lg font-bold">{{ product.price }}</span>
-      <span class="text-xs align-top ml-0.5">$</span>
+      <span class="text-xs align-top ml-0.5">₦</span>
     </div>
     
     <!-- Add to Cart Button or Quantity Selector -->
